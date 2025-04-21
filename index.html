@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <input type="text" name="username" placeholder="Username" required /><br />
+        <input type="password" name="password" placeholder="Password" required /><br />
+        <button type="submit">Login</button>
+    </form>
+    </div>
+
+
+    <h2>Or Signup</h2>
+    <form id="signupForm">
+        <input type="text" name="username" placeholder="New Username" required /><br />
+        <input type="password" name="password" placeholder="New Password" required /><br />
+        <button type="submit">Signup</button>
+    </form>
+
+
+    <div id="formDiv" style="display:none;">
+        <button onclick="logout()">Logout</button>
+        <h1>Submit Your Info</h1>
+        <form id="userForm" enctype="multipart/form-data">
+            <input type="text" name="name" placeholder="Name" required /><br />
+            <input type="email" name="email" placeholder="Email" required /><br />
+            <input type="file" name="file" required /><br />
+            <button type="submit">Submit</button>
+        </form>
+
+        <h2>Submitted Entries</h2>
+        <ul id="entries"></ul>
+    </div>
+
+
+    <script>
+        const loginForm = document.getElementById("loginForm");
+        const userForm = document.getElementById("userForm");
+        const entriesList = document.getElementById("entries");
+        const loginDiv = document.getElementById("loginForm");
+        const signupDiv = document.getElementById("signupForm");
+        const formDiv = document.getElementById("formDiv");
+
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(loginForm);
+            const data = Object.fromEntries(formData.entries());
+
+            const res = await fetch("http://localhost:3000/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(data),
+            });
+
+            if (res.ok) {
+                loginDiv.style.display = "none";
+                signupDiv.style.display = "none"; // 👈 Hide signup section too
+                formDiv.style.display = "block";
+                loadEntries();
+            } else {
+                alert("Login failed");
+            }
+        });
+
+        userForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(userForm);
+
+            await fetch("http://localhost:3000/submit", {
+                method: "POST",
+                credentials: "include",
+                body: formData,
+            });
+
+            userForm.reset();
+            loadEntries();
+        });
+
+        const signupForm = document.getElementById("signupForm");
+
+        signupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(signupForm);
+            const data = Object.fromEntries(formData.entries());
+
+            const res = await fetch("http://localhost:3000/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(data),
+            });
+
+            if (res.ok) {
+                alert("Signup successful. You can now log in.");
+                signupForm.reset();
+            } else {
+                const error = await res.json();
+                alert("Signup failed: " + error.message);
+            }
+        });
+
+
+        async function loadEntries() {
+            const res = await fetch("http://localhost:3000/entries", {
+                credentials: "include",
+            });
+
+            if (!res.ok) return;
+
+            const entries = await res.json();
+            entriesList.innerHTML = "";
+            entries.forEach((entry) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${entry.name} (${entry.email}) - <a href="http://localhost:3000/uploads/${entry.filename}" target="_blank">File</a>`;
+                entriesList.appendChild(li);
+            });
+        }
+
+        async function logout() {
+            await fetch("http://localhost:3000/logout", {
+                method: "POST",
+                credentials: "include",
+            });
+            formDiv.style.display = "none";
+            loginDiv.style.display = "block";
+            signupDiv.style.display = "block";
+        }
+
+    </script>
+</body>
+
+</html>
